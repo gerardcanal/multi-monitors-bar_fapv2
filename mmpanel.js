@@ -379,11 +379,13 @@ const MultiMonitorsPanel = GObject.registerClass(
             });
             this.add_child(this._centerBox);
 
-            // Wrapper inside center box to center its single child (dateMenu)
-            this._centerBin = new St.Widget({
-                layout_manager: new Clutter.BinLayout(),
+            // Horizontal row inside center box so multiple center items
+            // (e.g. dateMenu + weather) sit side by side instead of stacking
+            this._centerBin = new St.BoxLayout({
                 x_expand: true,
                 y_expand: true,  // Allow full height for dateMenu hover
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.FILL,
             });
             this._centerBox.add_child(this._centerBin);
 
@@ -1046,8 +1048,6 @@ const MultiMonitorsPanel = GObject.registerClass(
 
             // If targeting center box, place the item in the center wrapper and center it
             if (box === this._centerBox && this._centerBin) {
-                // Remove any existing children from centerBin first
-                this._centerBin.remove_all_children();
                 container.x_align = Clutter.ActorAlign.CENTER;
                 // Use FILL for dateMenu so hover takes full panel height
                 if (role === 'dateMenu') {
@@ -1056,7 +1056,8 @@ const MultiMonitorsPanel = GObject.registerClass(
                 } else {
                     container.y_align = Clutter.ActorAlign.CENTER;
                 }
-                this._centerBin.add_child(container);
+                const index = Math.max(0, Math.min(position, this._centerBin.get_n_children()));
+                this._centerBin.insert_child_at_index(container, index);
             } else {
                 // Add to box at position
                 box.insert_child_at_index(container, position);
@@ -1268,7 +1269,8 @@ const MultiMonitorsPanel = GObject.registerClass(
                             this._destroyIndicator(role);
                             continue;
                         }
-                        this._addToPanelBox(role, indicator, i + nChildren, box);
+                        const position = box === this._centerBox ? i : i + nChildren;
+                        this._addToPanelBox(role, indicator, position, box);
                     } else {
                     }
                 } catch (e) {
